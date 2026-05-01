@@ -208,7 +208,7 @@ func FetchMatchByApiID(apiID int) (*apiMatch, error) {
 
 // callAPI effectue un appel HTTP GET vers l'API et retourne la liste des matchs
 func callAPI(url string) ([]apiMatch, error) {
-	client := &http.Client{Timeout: 10 * time.Second} //creation client HTTP(cree un outil pour envoyer des requetes internet)Timeout= securité (evite blocage)
+	client := &http.Client{Timeout: 30 * time.Second} //creation client HTTP(cree un outil pour envoyer des requetes internet)Timeout= securité (evite blocage)
 	req, err := http.NewRequest("GET", url, nil)      //creation requete (prepare une requete HTTP GET vers l'url)
 	if err != nil {
 		return nil, err
