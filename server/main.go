@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"sportpulse/server/handlers"
 	"strings"
 	"time"
@@ -49,22 +50,22 @@ func handlerNotFound(w http.ResponseWriter, r *http.Request) {
 func main() {
 	godotenv.Load()
 
-	initDB() //inialise la base
+	initDB() // initialise la base
 
-	StartScheduler() // lancer le scheduler nocturne en arriere-plan
+	StartScheduler() // lancer le scheduler nocturne en arrière-plan
 	go func() {
 		time.Sleep(3 * time.Second)
 		FetchAndStoreScheduled()
 	}()
 
-	handlers.InsertTestMatches(DB) //inserer des matchs de test si la  BDD est vide
+	// handlers.InsertTestMatches(DB) // désactivé en prod — le scheduler récupère les vrais matchs
 
-	mux := http.NewServeMux() //configurer les routes HTTP
+	mux := http.NewServeMux() // configurer les routes HTTP
 
 	// ------- Health -----------------------------------------
 	mux.HandleFunc("/api/health", withCORS(handlerHealth))
 
-	// --------Auth-------------------------------------------
+	// -------- Auth ------------------------------------------
 	mux.HandleFunc("/api/auth/register", withCORS(func(w http.ResponseWriter, r *http.Request) {
 		handlers.Register(DB, w, r)
 	}))
@@ -72,7 +73,7 @@ func main() {
 		handlers.Login(DB, w, r)
 	}))
 
-	//--------Matchs----------------------------------------------
+	// -------- Matchs ----------------------------------------
 	mux.HandleFunc("/api/matches", withCORS(func(w http.ResponseWriter, r *http.Request) {
 		handlers.GetMatches(DB, w, r)
 	}))
@@ -82,18 +83,14 @@ func main() {
 		// parts : ["", "api", "matches", "{id}", "{sub}"]
 
 		if len(parts) == 4 {
-			// on passe CheckAndUpdateMatch comme fonction callback
 			handlers.GetMatchByID(DB, w, r, CheckAndUpdateMatch)
-
 		} else if len(parts) == 5 && parts[4] == "predictions" {
-
 			if r.Method == http.MethodGet {
 				handlers.GetPredictions(DB, w, r)
 			} else {
 				handlers.PostPrediction(DB, w, r)
 			}
 		} else if len(parts) == 5 && parts[4] == "comments" {
-			// /api/matches/{id}/comments  GET ou POST
 			if r.Method == http.MethodGet {
 				handlers.GetComments(DB, w, r)
 			} else {
@@ -104,12 +101,12 @@ func main() {
 		}
 	}))
 
-	// -----------Leaderboard--------------------------------------------------------
+	// ----------- Leaderboard --------------------------------
 	mux.HandleFunc("/api/leaderboard", withCORS(func(w http.ResponseWriter, r *http.Request) {
 		handlers.GetLeaderboard(DB, w, r)
 	}))
 
-	// ----------- Users-----------------------------------------------------------------
+	// ----------- Users --------------------------------------
 	mux.HandleFunc("/api/users/me", withCORS(func(w http.ResponseWriter, r *http.Request) {
 		handlers.GetMe(DB, w, r)
 	}))
@@ -117,14 +114,19 @@ func main() {
 		handlers.GetUserByID(DB, w, r)
 	}))
 
-	//---------- Route inconnue ----------------------------------------------------------------
+	// ---------- Route inconnue ------------------------------
 	mux.HandleFunc("/", handlerNotFound)
 
-	// demarrer le serveur HTTP
-	port := ":8091"
-	log.Printf("SportPulse server starting on http://localhost%s\n", port)
+	// ---------- Démarrage serveur ---------------------------
+	// Render fournit le port via la variable d'environnement PORT
+	// En local, on utilise 8091 par défaut
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8091"
+	}
+	log.Printf("SportPulse server starting on port %s\n", port)
 
-	err := http.ListenAndServe(port, mux)
+	err := http.ListenAndServe(":"+port, mux)
 	if err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}
