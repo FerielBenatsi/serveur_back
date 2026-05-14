@@ -49,7 +49,7 @@ func Register(db *sql.DB, w http.ResponseWriter, r *http.Request) {
 	}
 
 	//On insere l'utilisateur dans la base de données
-	result, err := db.Exec(
+	_, err = db.Exec(
 		`INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)`, body.Username, body.Email, string(hash),
 	)
 
@@ -59,12 +59,9 @@ func Register(db *sql.DB, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//on recupere l'id du nouvel utilisateur
-	userID, _ := result.LastInsertId()
-
 	//on repond avec les infos du compte créé (sans le mot de passe!)
 	writeJSON(w, http.StatusCreated, map[string]interface{}{
-		"user_id":  userID,
+
 		"username": body.Username,
 		"email":    body.Email,
 		"message":  "account created successfully",
@@ -184,11 +181,9 @@ func writeError(w http.ResponseWriter, status int, message string) {
 	writeJSON(w, status, map[string]string{"error": message})
 }
 
-
 //decodeJSON lit et decode le corps JSON d'une requete
 //trans du JSON envoyé par le client en variables GO
 
 func decodeJSON(r *http.Request, dst interface{}) error {
 	return json.NewDecoder(r.Body).Decode(dst)
 }
-

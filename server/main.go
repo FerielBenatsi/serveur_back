@@ -72,7 +72,14 @@ func main() {
 	mux.HandleFunc("/api/auth/login", withCORS(func(w http.ResponseWriter, r *http.Request) {
 		handlers.Login(DB, w, r)
 	}))
-
+	// ----------- deleteaccount --------------------------------
+	mux.HandleFunc("/api/users/me", withCORS(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodDelete {
+			handlers.DeleteMe(DB, w, r)
+		} else {
+			handlers.GetMe(DB, w, r)
+		}
+	}))
 	// -------- Matchs ----------------------------------------
 	mux.HandleFunc("/api/matches", withCORS(func(w http.ResponseWriter, r *http.Request) {
 		handlers.GetMatches(DB, w, r)
@@ -87,9 +94,12 @@ func main() {
 		} else if len(parts) == 5 && parts[4] == "predictions" {
 			if r.Method == http.MethodGet {
 				handlers.GetPredictions(DB, w, r)
+			} else if r.Method == http.MethodPut {
+				handlers.PutPrediction(DB, w, r)
 			} else {
 				handlers.PostPrediction(DB, w, r)
 			}
+
 		} else if len(parts) == 5 && parts[4] == "comments" {
 			if r.Method == http.MethodGet {
 				handlers.GetComments(DB, w, r)
@@ -107,9 +117,7 @@ func main() {
 	}))
 
 	// ----------- Users --------------------------------------
-	mux.HandleFunc("/api/users/me", withCORS(func(w http.ResponseWriter, r *http.Request) {
-		handlers.GetMe(DB, w, r)
-	}))
+
 	mux.HandleFunc("/api/users/", withCORS(func(w http.ResponseWriter, r *http.Request) {
 		handlers.GetUserByID(DB, w, r)
 	}))
